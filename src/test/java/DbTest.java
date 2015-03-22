@@ -1,7 +1,7 @@
-import assignment.Book;
-import assignment.Config;
-import assignment.ConnectToDB;
-import assignment.Server;
+import db.ConnectToDB;
+import db.Db;
+import main.Book;
+import main.Config;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -10,7 +10,6 @@ import org.junit.Test;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class DbTest {
@@ -40,8 +39,7 @@ public class DbTest {
 
     @Test
     public void testCheckAllParsedBooks() {
-        List<Book> books = new ArrayList<>();
-        Server.fetchAndParseQuizContent(books);
+        List<Book> books = Db.fetchAndParseBooks();
         Assert.assertTrue("The list should now contain at least one Book.", books.size() > 0);
 
         books.forEach(System.out::println);

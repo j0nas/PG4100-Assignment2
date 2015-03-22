@@ -1,4 +1,4 @@
-package assignment;
+package main;
 
 public class Config {
     public static final String DB_USER = "root";
@@ -7,4 +7,6 @@ public class Config {
 
     public static final String DB_NAME = "pg4100innlevering2";
     public static final String DB_TABLE_NAME = "bokliste";
+
+    public static int SERVER_PORT = 3000;
 }

@@ -1,4 +1,4 @@
-package assignment;
+package db;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 

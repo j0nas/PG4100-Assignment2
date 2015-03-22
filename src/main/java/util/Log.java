@@ -1,4 +1,4 @@
-package assignment;
+package util;
 
 /**
  * A simple logger.

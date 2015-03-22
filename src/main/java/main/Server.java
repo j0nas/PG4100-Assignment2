@@ -1,34 +1,35 @@
-package assignment;
+package main;
+
+import db.Db;
+import util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ServerSocket;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
-    public static final int COMMUNCATION_PORT = 3000;
     public static final String PREFIX_QUESTION = "QUESTION:";
     public static final String PREFIX_END_OF_QUIZ = "CLIENTENDQUIZ";
     private static final String PREFIX_CLIENT_WANTS_TO_END_QUIZ = "-q";
 
     private ServerSocket socket;
     private List<ClientModel> clients = new ArrayList<>();
-    private List<Book> quizBooks = new ArrayList<>();
+    private ArrayList<Book> quizBooks;
 
     public Server() {
         Log.s("Fetching books from database, using Config.java's settings..");
-        fetchAndParseQuizContent(quizBooks);
+        quizBooks = Db.fetchAndParseBooks();
 
-        bindSocketToPort(COMMUNCATION_PORT);
+        bindSocketToPort();
         ExecutorService threadPool = Executors.newCachedThreadPool();
-
         Log.s("Awaiting client connections..");
+
         while (true) {
             try {
                 clients.add(new ClientModel(clients.size() + 1, socket.accept()));
@@ -44,29 +45,6 @@ public class Server {
     public static void main(String[] args) {
         Log.debugLevel = Log.LOG_VERBOSE;
         new Server();
-    }
-
-    public static void fetchAndParseQuizContent(List<Book> listToFill) {
-        try (ConnectToDB dbConnection = new ConnectToDB(Config.DB_HOST, Config.DB_NAME, Config.DB_USER, Config.DB_PASS)) {
-            ResultSet result = dbConnection
-                    .getConnection()
-                    .prepareStatement("SELECT * FROM " + Config.DB_TABLE_NAME)
-                    .executeQuery();
-
-            while (result.next()) {
-                listToFill.add(new Book(
-                        result.getInt(result.findColumn("id")),
-                        result.getString(result.findColumn("author")),
-                        result.getString(result.findColumn("title")),
-                        result.getString(result.findColumn("ISBN")),
-                        result.getInt(result.findColumn("pages")),
-                        result.getInt(result.findColumn("released"))
-                ));
-            }
-        } catch (Exception e) {
-            Log.e("Error upon connecting to database: " + e.getMessage());
-        }
-
     }
 
     private Runnable newClientThread() {
@@ -104,7 +82,7 @@ public class Server {
                     }
                 }
             } catch (IOException e) {
-                Log.e("An error occurred whilst accesing I/O streams: " + e.getMessage());
+                Log.e("An error occurred whilst accessing I/O streams: " + e.getMessage());
             }
         };
     }
@@ -131,19 +109,19 @@ public class Server {
         output.flush();
     }
 
-    private void bindSocketToPort(int port) {
+    private void bindSocketToPort() {
         while (true) {
-            Log.s("Attempting to bind to port " + port + ".. ");
+            Log.s("Attempting to bind to port " + Config.SERVER_PORT + ".. ");
             try {
-                socket = new ServerSocket(port);
+                socket = new ServerSocket(Config.SERVER_PORT);
                 Log.s("Success.");
                 break;
             } catch (IOException e) {
                 if (e instanceof BindException) {
                     Log.s("Port is taken.");
-                    port++;
+                    Config.SERVER_PORT++;
                 } else {
-                    e.printStackTrace();
+                    Log.e("Encountered unknown error: " + e.getMessage());
                     return;
                 }
             }

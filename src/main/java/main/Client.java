@@ -1,4 +1,6 @@
-package assignment;
+package main;
+
+import util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,12 +14,20 @@ public class Client {
     private DataOutputStream output;
     private DataInputStream input;
 
-    public Client() throws IOException {
-        socket = new Socket(InetAddress.getLocalHost(), Server.COMMUNCATION_PORT);
-        Log.s("Connected to server: " + socket.getLocalAddress());
+    public Client(InetAddress serverAddress, int port) throws IOException {
+        socket = new Socket(serverAddress, port);
+        Log.s("Connected to server at " + socket.getLocalAddress());
 
         output = new DataOutputStream(socket.getOutputStream());
         input = new DataInputStream(socket.getInputStream());
+    }
+
+    private void executeLifecycle() {
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (true) {
+                handleIncomingServerMessages(scanner);
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -25,8 +35,8 @@ public class Client {
 
         Client client = null;
         try {
-            client = new Client();
-            client.startClient();
+            client = new Client(InetAddress.getLocalHost(), Config.SERVER_PORT);
+            client.executeLifecycle();
         } catch (IOException e) {
             Log.e("Error when connecting to server: " + e.getMessage());
         } finally {
@@ -36,21 +46,16 @@ public class Client {
         }
     }
 
-    private void startClient() {
-        try (Scanner scanner = new Scanner(System.in)) {
-            while (true) {
-                try {
-                    // Create an input stream to receive data from the server
-                    handleIncomingServerMessages(scanner);
-                } catch (IOException e) {
-                    Log.e("Could not send message: " + e.getMessage());
-                }
-            }
-        }
-    }
+    private void handleIncomingServerMessages(Scanner scanner) {
+        String message;
 
-    private void handleIncomingServerMessages(Scanner scanner) throws IOException {
-        final String message = input.readUTF();
+        try {
+            message = input.readUTF();
+        } catch (IOException e) {
+            Log.e("Could not receive incoming data: " + e.getMessage());
+            return;
+        }
+
         Log.v("Received message from server: " + message);
 
         if (message.startsWith(Server.PREFIX_END_OF_QUIZ)) {
@@ -64,7 +69,7 @@ public class Client {
         }
     }
 
-    private void askUserAndSubmitResponse(Scanner scanner, String message) throws IOException {
+    private void askUserAndSubmitResponse(Scanner scanner, String message) {
         System.out.println(message.substring(Server.PREFIX_QUESTION.length()));
         if (scanner.hasNextLine()) {
             String answer = scanner.nextLine();
@@ -75,9 +80,13 @@ public class Client {
         }
     }
 
-    private void sendMessageToServer(String message) throws IOException {
-        output.writeUTF(message);
-        output.flush();
+    private void sendMessageToServer(String message) {
+        try {
+            output.writeUTF(message);
+            output.flush();
+        } catch (IOException e) {
+            Log.e("Could not send message to server: " + e.getMessage());
+        }
     }
 
     public void destroy() {

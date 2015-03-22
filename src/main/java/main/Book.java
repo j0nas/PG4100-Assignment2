@@ -1,4 +1,4 @@
-package assignment;
+package main;
 
 public class Book {
     private int id;
@@ -22,7 +22,6 @@ public class Book {
         return String.format("Book{id=%d, author='%s', title='%s', ISBN='%s', pages=%d, released=%d}",
                 id, author, title, ISBN, pages, released);
     }
-
     public int getId() {
         return id;
     }
