@@ -3,7 +3,6 @@ import db.Db;
 import main.Book;
 import main.Config;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -11,6 +10,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
+
+import static org.junit.Assert.assertTrue;
 
 public class DbTest {
     private ConnectToDB dbConnection;
@@ -25,7 +26,7 @@ public class DbTest {
         ResultSet result = dbConnection.getConnection().prepareStatement("SELECT * FROM " + Config.DB_TABLE_NAME).executeQuery();
 
         ResultSetMetaData resultMeta = result.getMetaData();
-        Assert.assertTrue("The number of returned rows should be greater than zero.",
+        assertTrue("The number of returned rows should be greater than zero.",
                 resultMeta.getColumnCount() > 0);
 
         while (result.next()) {
@@ -40,7 +41,7 @@ public class DbTest {
     @Test
     public void testCheckAllParsedBooks() {
         List<Book> books = Db.fetchAndParseBooks();
-        Assert.assertTrue("The list should now contain at least one Book.", books.size() > 0);
+        assertTrue("The list should now contain at least one Book.", books.size() > 0);
 
         books.forEach(System.out::println);
         System.out.println("Elements held: " + books.size());

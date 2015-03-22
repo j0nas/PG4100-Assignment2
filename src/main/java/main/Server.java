@@ -18,7 +18,6 @@ public class Server {
     public static final String PREFIX_END_OF_QUIZ = "CLIENTENDQUIZ";
     private static final String PREFIX_CLIENT_WANTS_TO_END_QUIZ = "-q";
 
-    private ServerSocket socket;
     private List<ClientModel> clients = new ArrayList<>();
     private ArrayList<Book> quizBooks;
 
@@ -26,7 +25,12 @@ public class Server {
         Log.s("Fetching books from database, using Config.java's settings..");
         quizBooks = Db.fetchAndParseBooks();
 
-        bindSocketToPort();
+        ServerSocket socket = getSocketBoundToAvailablePort();
+        if (socket == null) {
+            Log.e("Socket initialization failed, cannot continue.");
+            return;
+        }
+
         ExecutorService threadPool = Executors.newCachedThreadPool();
         Log.s("Awaiting client connections..");
 
@@ -56,12 +60,8 @@ public class Server {
                 while (true) {
                     try {
                         Book currentBook = quizBooks.get((int) (Math.random() * quizBooks.size()));
-
-                        String message = PREFIX_QUESTION + (client.getCurrentQuestionNumber() == -1 ?
-                                "Want to start a quiz? (y/n): " : "Who wrote " + currentBook.getTitle() + "?");
-                        output.writeUTF(message);
-                        output.flush();
-                        Log.v(String.format("Sent message to client #%d: %s", client.getId(), message));
+                        messageClient(output, PREFIX_QUESTION + (client.getCurrentQuestionNumber() == -1 ?
+                                "Want to start a quiz? (y/n): " : "Who wrote " + currentBook.getTitle() + "?"));
 
                         final String data = input.readUTF();
                         Log.s(String.format("Got message from client #%d: %s", client.getId(), data));
@@ -70,11 +70,10 @@ public class Server {
                             if (data.toLowerCase().contains("y")){
                                 client.setCurrentQuestion(0);
                                 Log.s("Client #" + client.getId() + " opted to start quiz.");
-                                output.writeUTF("Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
-                                output.flush();
+                                messageClient(output, "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
                             } else {
-                                output.writeUTF(PREFIX_END_OF_QUIZ);
-                                output.flush();
+                                messageClient(output, "Some other time, then. Good bye!");
+                                messageClient(output, PREFIX_END_OF_QUIZ);
                             }
                         } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
                             checkClientAnswerAndProvideFeedback(client, output, currentBook, data);
@@ -92,15 +91,19 @@ public class Server {
         };
     }
 
+    private void messageClient(DataOutputStream output, String message) throws IOException {
+        output.writeUTF(message);
+        output.flush();
+    }
+
     private void checkClientAnswerAndProvideFeedback(ClientModel client, DataOutputStream output, Book currentBook, String answer) throws IOException {
         boolean scored = answer.toLowerCase().contains(currentBook.getAuthorFirstName().toLowerCase()) &&
                 answer.toLowerCase().contains(currentBook.getAuthorLastName().toLowerCase());
+
         Log.s(String.format("Client #%d answered question #%d %scorrectly.",
                 client.getId(), client.getCurrentQuestionNumber(), scored ? "" : "in"));
-
-        output.writeUTF(scored ? "Correct!" : "Incorrect - correct answer is " + currentBook.getAuthorFullNameCaps());
-        output.flush();
-
+        messageClient(output, scored ? "Correct!" :
+                "Incorrect - correct answer is " + currentBook.getAuthorFullNameCaps());
         client.incCurrentQuestion(scored);
     }
 
@@ -108,26 +111,26 @@ public class Server {
         Log.v(String.format("Client #%d finished quiz with score %d.",
                 client.getId(), client.getScore()));
 
-        output.writeUTF(String.format("Quiz completed. Your final score is %d/%d.\n" +
+        messageClient(output, String.format("Quiz completed. Your final score is %d/%d.\n" +
                 "Thank you for participating.", client.getScore(), client.getCurrentQuestionNumber()));
-        output.writeUTF(PREFIX_END_OF_QUIZ);
-        output.flush();
+        messageClient(output, PREFIX_END_OF_QUIZ);
     }
 
-    private void bindSocketToPort() {
+    private ServerSocket getSocketBoundToAvailablePort() {
+        ServerSocket serverSocket;
         while (true) {
             Log.s("Attempting to bind to port " + Config.SERVER_PORT + ".. ");
             try {
-                socket = new ServerSocket(Config.SERVER_PORT);
+                serverSocket = new ServerSocket(Config.SERVER_PORT);
                 Log.s("Success.");
-                break;
+                return serverSocket;
             } catch (IOException e) {
                 if (e instanceof BindException) {
                     Log.s("Port is taken.");
                     Config.SERVER_PORT++;
                 } else {
                     Log.e("Encountered unknown error: " + e.getMessage());
-                    return;
+                    return null;
                 }
             }
         }
