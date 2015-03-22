@@ -1,12 +1,18 @@
 package assignment2;
 
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
-public class Client {
+public class Client extends Application {
     private Socket socket;
     private DataOutputStream output;
     private DataInputStream input;
@@ -35,7 +41,7 @@ public class Client {
                     e.printStackTrace();
                 }
             }
-        }).run();
+        });//.run();
 
         // Create an input stream to recieve data from the server
 //        final String data = input.readUTF();
@@ -43,6 +49,11 @@ public class Client {
     }
 
     public static void main(String[] args) {
+        launch(args);
+        if (Math.random() > 0) {
+            return;
+        }
+
         Client client = null;
         try {
             client = new Client(InetAddress.getLocalHost(), Server.COMMUNCATION_PORT);
@@ -65,5 +76,13 @@ public class Client {
         socket.close();
         input.close();
         output.close();
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        Parent root = FXMLLoader.load(getClass().getResource("clientform.fxml"));
+        primaryStage.setTitle("Client");
+        primaryStage.setScene(new Scene(root, 300, 275));
+        primaryStage.show();
     }
 }

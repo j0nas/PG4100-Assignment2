@@ -17,23 +17,24 @@ public class Server {
 
     public Server() {
         bindSocketToPort(COMMUNCATION_PORT);
-
         threadPool = Executors.newCachedThreadPool();
 
-
-        final Thread clientManagerThread = new Thread(() -> {
+        new Thread(() -> {
             Log.s("Awaiting client connections..");
             while (true) {
                 try {
-                    final ClientModel clientModel = new ClientModel(clients.size() + 1, socket.accept());
-                    clients.add(clientModel);
+                    clients.add(new ClientModel(clients.size() + 1, socket.accept()));
                     threadPool.execute(() -> {
-                        ClientModel clientModelForThisThread = clientModel;
-                        try (DataInputStream input = new DataInputStream(clients.get(clients.size() - 1)
-                                .getSocket()
-                                .getInputStream())) {
-                            final String data = input.readUTF();
-                            Log.s("Got message from client #" + clientModelForThisThread.getId() + ": " + data);
+                        ClientModel lastClient = clients.get(clients.size() - 1);
+                        try (DataInputStream input = new DataInputStream(lastClient.getSocket().getInputStream())) {
+                            while (true) {
+                                try {
+                                    final String data = input.readUTF();
+                                    Log.s("Got message from client #" + lastClient.getId() + ": " + data);
+                                } catch (Exception e) {
+                                    Log.e("An error occurred: " + e.getMessage());
+                                }
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -44,10 +45,7 @@ public class Server {
 
                 Log.s("Accepted client #" + clients.size() + 1);
             }
-        });
-        clientManagerThread.start();
-
-
+        }).start();
     }
 
     public static void main(String[] args) {
