@@ -5,18 +5,14 @@ import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class ConnectToDB {
+public class ConnectToDB implements AutoCloseable {
     private Connection connection;
     private MysqlDataSource dataSource = new MysqlDataSource();
 
-    public ConnectToDB(String hostname, String username, String password) {
+    public ConnectToDB(final String hostname, final String dbName, final String username, final String password) {
         dataSource.setServerName(hostname);
         dataSource.setUser(username);
         dataSource.setPassword(password);
-    }
-
-    public ConnectToDB(String hostname, String dbName, String username, String password) {
-        this(hostname, username, password);
         dataSource.setDatabaseName(dbName);
     }
 
@@ -26,5 +22,10 @@ public class ConnectToDB {
         }
 
         return this.connection;
+    }
+
+    @Override
+    public void close() throws Exception {
+        connection.close();
     }
 }

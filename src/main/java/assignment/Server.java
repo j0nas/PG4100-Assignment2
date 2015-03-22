@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ServerSocket;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -12,17 +13,18 @@ import java.util.concurrent.Executors;
 
 public class Server {
     public static final int COMMUNCATION_PORT = 3000;
-    public static final String STATUS_END_OF_QUIZ = "STATUS_END_OF_QUIZ";
-    public static final String QUESTION_PREFIX = "QUESTION:";
+    public static final String PREFIX_QUESTION = "QUESTION:";
+    public static final String PREFIX_END_OF_QUIZ = "CLIENTENDQUIZ";
+    private static final String PREFIX_CLIENT_WANTS_TO_END_QUIZ = "-q";
 
     private ServerSocket socket;
     private List<ClientModel> clients = new ArrayList<>();
-
-
-    private String[] questions = new String[]{"Question 1", "Question 2", "Question 3", "Question 4", "Question 5"};
-    private String[] answers = new String[]{"ans1", "ans2", "ans3", "ans4", "ans5"};
+    private List<Book> quizBooks = new ArrayList<>();
 
     public Server() {
+        Log.s("Fetching books from database, using Config.java's settings..");
+        fetchAndParseQuizContent(quizBooks);
+
         bindSocketToPort(COMMUNCATION_PORT);
         ExecutorService threadPool = Executors.newCachedThreadPool();
 
@@ -44,6 +46,29 @@ public class Server {
         new Server();
     }
 
+    public static void fetchAndParseQuizContent(List<Book> listToFill) {
+        try (ConnectToDB dbConnection = new ConnectToDB(Config.DB_HOST, Config.DB_NAME, Config.DB_USER, Config.DB_PASS)) {
+            ResultSet result = dbConnection
+                    .getConnection()
+                    .prepareStatement("SELECT * FROM " + Config.DB_TABLE_NAME)
+                    .executeQuery();
+
+            while (result.next()) {
+                listToFill.add(new Book(
+                        result.getInt(result.findColumn("id")),
+                        result.getString(result.findColumn("author")),
+                        result.getString(result.findColumn("title")),
+                        result.getString(result.findColumn("ISBN")),
+                        result.getInt(result.findColumn("pages")),
+                        result.getInt(result.findColumn("released"))
+                ));
+            }
+        } catch (Exception e) {
+            Log.e("Error upon connecting to database: " + e.getMessage());
+        }
+
+    }
+
     private Runnable newClientThread() {
         return () -> {
             ClientModel client = clients.get(clients.size() - 1);
@@ -52,8 +77,9 @@ public class Server {
             ) {
                 while (true) {
                     try {
-                        String message = QUESTION_PREFIX + (client.getCurrentQuestion() == -1 ?
-                                "Want to start a quiz? (y/n): " : questions[client.getCurrentQuestion()]);
+                        Book currentBook = quizBooks.get((int) (Math.random() * quizBooks.size()));
+                        String message = PREFIX_QUESTION + (client.getCurrentQuestion() == -1 ?
+                                "Want to start a quiz? (y/n): " : "Who wrote " + currentBook.getTitle() + "?");
                         output.writeUTF(message);
                         output.flush();
                         Log.v(String.format("Sent message to client #%d: %s", client.getId(), message));
@@ -64,15 +90,15 @@ public class Server {
                             if (data.toLowerCase().contains("y")) { // TODO: externalize to GUI (controller)
                                 client.setCurrentQuestion(0);
                                 Log.s("Client #" + client.getId() + " opted to start quiz.");
+                                output.writeUTF("Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
                             }
-                        } else if (client.getCurrentQuestion() < questions.length - 1) {
-
-                            boolean scored = data.toLowerCase().contains(answers[client.getCurrentQuestion()].toLowerCase());
+                        } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
+                            boolean scored = data.toLowerCase().contains(currentBook.getAuthor().toLowerCase());
                             Log.s(String.format("Client #%d answered question #%d %scorrectly.",
                                     client.getId(), client.getCurrentQuestion(), scored ? "" : "in"));
 
                             output.writeUTF(scored ? "Correct!" : "Incorrect - correct answer is " +
-                                    answers[client.getCurrentQuestion()].toUpperCase());
+                                    currentBook.getAuthor().toUpperCase());
                             output.flush();
 
                             client.incCurrentQuestion(scored);
@@ -81,8 +107,8 @@ public class Server {
                                     client.getId(), client.getScore()));
 
                             output.writeUTF(String.format("Quiz completed. Your final score is %d/%d.\n" +
-                                    "Thank you for participating.", client.getScore(), questions.length));
-                            output.writeUTF(STATUS_END_OF_QUIZ);
+                                    "Thank you for participating.", client.getScore(), client.getCurrentQuestion()));
+                            output.writeUTF(PREFIX_END_OF_QUIZ);
                             output.flush();
                         }
 

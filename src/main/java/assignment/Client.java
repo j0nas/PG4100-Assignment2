@@ -57,25 +57,25 @@ public class Client extends Application {
         final String message = input.readUTF();
         Log.v("Received message from server: " + message);
 
-        if (message.startsWith(Server.STATUS_END_OF_QUIZ)) {
+        if (message.startsWith(Server.PREFIX_END_OF_QUIZ)) {
             Log.w("Received shutdown instruction. Bye!");
             destroy();
             return;
         }
 
-        if (message.startsWith(Server.QUESTION_PREFIX)) {
+        if (message.startsWith(Server.PREFIX_QUESTION)) {
             askClientAndSendResponse(scanner, message);
         }
     }
 
     private void askClientAndSendResponse(Scanner scanner, String message) throws IOException {
+        System.out.println(message.substring(Server.PREFIX_QUESTION.length()));
         if (scanner.hasNextLine()) {
-            System.out.println(message.substring(Server.QUESTION_PREFIX.length()));
             String answer = scanner.nextLine();
             sendMessageToServer(answer);
             Log.v("Sending message to server: " + answer);
         } else {
-            Log.e("Could not access scanner?");
+            Log.e("Could not access scanner!");
         }
     }
 
