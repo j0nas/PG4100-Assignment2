@@ -57,7 +57,7 @@ public class Server {
                     try {
                         Book currentBook = quizBooks.get((int) (Math.random() * quizBooks.size()));
 
-                        String message = PREFIX_QUESTION + (client.getCurrentQuestion() == -1 ?
+                        String message = PREFIX_QUESTION + (client.getCurrentQuestionNumber() == -1 ?
                                 "Want to start a quiz? (y/n): " : "Who wrote " + currentBook.getTitle() + "?");
                         output.writeUTF(message);
                         output.flush();
@@ -66,10 +66,16 @@ public class Server {
                         final String data = input.readUTF();
                         Log.s(String.format("Got message from client #%d: %s", client.getId(), data));
 
-                        if (client.getCurrentQuestion() == -1 && data.toLowerCase().contains("y")) {
-                            client.setCurrentQuestion(0);
-                            Log.s("Client #" + client.getId() + " opted to start quiz.");
-                            output.writeUTF("Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
+                        if (client.getCurrentQuestionNumber() == -1) {
+                            if (data.toLowerCase().contains("y")){
+                                client.setCurrentQuestion(0);
+                                Log.s("Client #" + client.getId() + " opted to start quiz.");
+                                output.writeUTF("Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
+                                output.flush();
+                            } else {
+                                output.writeUTF(PREFIX_END_OF_QUIZ);
+                                output.flush();
+                            }
                         } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
                             checkClientAnswerAndProvideFeedback(client, output, currentBook, data);
                         } else {
@@ -90,7 +96,7 @@ public class Server {
         boolean scored = answer.toLowerCase().contains(currentBook.getAuthorFirstName().toLowerCase()) &&
                 answer.toLowerCase().contains(currentBook.getAuthorLastName().toLowerCase());
         Log.s(String.format("Client #%d answered question #%d %scorrectly.",
-                client.getId(), client.getCurrentQuestion(), scored ? "" : "in"));
+                client.getId(), client.getCurrentQuestionNumber(), scored ? "" : "in"));
 
         output.writeUTF(scored ? "Correct!" : "Incorrect - correct answer is " + currentBook.getAuthorFullNameCaps());
         output.flush();
@@ -103,7 +109,7 @@ public class Server {
                 client.getId(), client.getScore()));
 
         output.writeUTF(String.format("Quiz completed. Your final score is %d/%d.\n" +
-                "Thank you for participating.", client.getScore(), client.getCurrentQuestion()));
+                "Thank you for participating.", client.getScore(), client.getCurrentQuestionNumber()));
         output.writeUTF(PREFIX_END_OF_QUIZ);
         output.flush();
     }

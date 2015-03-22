@@ -17,7 +17,7 @@ public class ClientModel {
         return score;
     }
 
-    public int getCurrentQuestion() {
+    public int getCurrentQuestionNumber() {
         return currentQuestion;
     }
 

@@ -13,6 +13,7 @@ public class Client {
     private Socket socket;
     private DataOutputStream output;
     private DataInputStream input;
+    private boolean isAlive = true;
 
     public Client(InetAddress serverAddress, int port) throws IOException {
         socket = new Socket(serverAddress, port);
@@ -24,7 +25,7 @@ public class Client {
 
     private void executeLifecycle() {
         try (Scanner scanner = new Scanner(System.in)) {
-            while (true) {
+            while (isAlive) {
                 handleIncomingServerMessages(scanner);
             }
         }
@@ -87,7 +88,8 @@ public class Client {
         }
     }
 
-    public void destroy() {
+    private void destroy() {
+        isAlive = false;
         try {
             socket.close();
             input.close();
