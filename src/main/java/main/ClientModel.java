@@ -3,10 +3,10 @@ package main;
 import java.net.Socket;
 
 public class ClientModel {
+    private final int id;
+    private final Socket socket;
     private int score = 0;
     private int currentQuestion = -1;
-    private int id;
-    private Socket socket;
 
     public ClientModel(int id, Socket socket) {
         this.id = id;

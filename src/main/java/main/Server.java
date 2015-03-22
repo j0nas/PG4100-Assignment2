@@ -16,10 +16,11 @@ import java.util.concurrent.Executors;
 public class Server implements AutoCloseable {
     public static final String PREFIX_QUESTION = "QUESTION:";
     public static final String PREFIX_END_OF_QUIZ = "CLIENTENDQUIZ";
+
     private static final String PREFIX_CLIENT_WANTS_TO_END_QUIZ = "-q";
-    ServerSocket socket;
-    private List<ClientModel> clients = new ArrayList<>();
-    private ArrayList<Book> quizBooks;
+    private final ServerSocket socket;
+    private final List<ClientModel> clients = new ArrayList<>();
+    private final ArrayList<Book> quizBooks;
 
     /**
      * The initializing constructor for the class.
@@ -39,7 +40,7 @@ public class Server implements AutoCloseable {
      * @param args Not used.
      */
     public static void main(String[] args) {
-        // Log.debugLevel = Log.LOG_VERBOSE;
+        // Log.debugLevel = Log.LOG_VERBOSE; // UNCOMMENT THIS TO GET VERBOSE DEBUGGING
         try (Server server = new Server()) {
             server.start();
         }

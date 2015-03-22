@@ -6,8 +6,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public class ConnectToDB implements AutoCloseable {
+    private final MysqlDataSource dataSource = new MysqlDataSource();
     private Connection connection;
-    private MysqlDataSource dataSource = new MysqlDataSource();
+    private final MysqlDataSource dataSource = new MysqlDataSource();
 
     public ConnectToDB(final String hostname, final String dbName, final String username, final String password) {
         dataSource.setServerName(hostname);
