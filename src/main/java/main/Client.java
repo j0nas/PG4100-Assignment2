@@ -31,8 +31,6 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        Log.debugLevel = Log.LOG_VERBOSE;
-
         Client client = null;
         try {
             client = new Client(InetAddress.getLocalHost(), Config.SERVER_PORT);
@@ -56,17 +54,17 @@ public class Client {
             return;
         }
 
-        Log.v("Received message from server: " + message);
-
         if (message.startsWith(Server.PREFIX_END_OF_QUIZ)) {
-            Log.w("Received shutdown instruction. Bye!");
             destroy();
             return;
         }
 
         if (message.startsWith(Server.PREFIX_QUESTION)) {
             askUserAndSubmitResponse(scanner, message);
+            return;
         }
+
+        Log.s(message);
     }
 
     private void askUserAndSubmitResponse(Scanner scanner, String message) {

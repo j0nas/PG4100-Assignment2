@@ -1,16 +1,18 @@
 package main;
 
 public class Book {
-    private int id;
-    private String author;
-    private String title;
-    private String ISBN;
-    private int pages;
-    private int released;
+    private final int id;
+    private final String authorFirstName;
+    private final String authorLastName;
+    private final String title;
+    private final String ISBN;
+    private final int pages;
+    private final int released;
 
-    public Book(int id, String author, String title, String ISBN, int pages, int released) {
+    public Book(int id, String authorFirstName, String authorLastName, String title, String ISBN, int pages, int released) {
         this.id = id;
-        this.author = author;
+        this.authorFirstName = authorFirstName;
+        this.authorLastName = authorLastName;
         this.title = title;
         this.ISBN = ISBN;
         this.pages = pages;
@@ -19,15 +21,17 @@ public class Book {
 
     @Override
     public String toString() {
-        return String.format("Book{id=%d, author='%s', title='%s', ISBN='%s', pages=%d, released=%d}",
-                id, author, title, ISBN, pages, released);
+        return String.format("Book{id=%d, authorFirstName='%s', authorLastName='%s', " +
+                        "title='%s', ISBN='%s', pages=%d, released=%d}",
+                id, authorFirstName, authorLastName, title, ISBN, pages, released);
     }
+
     public int getId() {
         return id;
     }
 
-    public String getAuthor() {
-        return author;
+    public String getAuthorFullNameCaps() {
+        return (authorLastName + ", " + authorFirstName).toUpperCase();
     }
 
     public String getTitle() {
@@ -44,5 +48,13 @@ public class Book {
 
     public int getReleased() {
         return released;
+    }
+
+    public String getAuthorFirstName() {
+        return authorFirstName;
+    }
+
+    public String getAuthorLastName() {
+        return authorLastName;
     }
 }

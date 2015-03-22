@@ -16,10 +16,17 @@ public class Db {
                     .prepareStatement("SELECT * FROM " + Config.DB_TABLE_NAME)
                     .executeQuery();
 
+            String[] authorSplit;
+            String firstName;
+            String lastName;
             while (result.next()) {
+                authorSplit = result.getString(result.findColumn("author")).split(",");
+                firstName = authorSplit[1].trim();
+                lastName = authorSplit[0] != null ? authorSplit[0].trim() : "";
                 listToFill.add(new Book(
                         result.getInt(result.findColumn("id")),
-                        result.getString(result.findColumn("author")),
+                        firstName,
+                        lastName,
                         result.getString(result.findColumn("title")),
                         result.getString(result.findColumn("ISBN")),
                         result.getInt(result.findColumn("pages")),

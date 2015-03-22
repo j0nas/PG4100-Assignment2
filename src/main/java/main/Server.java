@@ -43,7 +43,7 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        Log.debugLevel = Log.LOG_VERBOSE;
+        // Log.debugLevel = Log.LOG_VERBOSE;
         new Server();
     }
 
@@ -69,8 +69,7 @@ public class Server {
                         if (client.getCurrentQuestion() == -1 && data.toLowerCase().contains("y")) {
                             client.setCurrentQuestion(0);
                             Log.s("Client #" + client.getId() + " opted to start quiz.");
-                            output.writeUTF("Enter your answers in the following format: last name, firstname.n\n" +
-                                    "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
+                            output.writeUTF("Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
                         } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
                             checkClientAnswerAndProvideFeedback(client, output, currentBook, data);
                         } else {
@@ -88,12 +87,12 @@ public class Server {
     }
 
     private void checkClientAnswerAndProvideFeedback(ClientModel client, DataOutputStream output, Book currentBook, String answer) throws IOException {
-        boolean scored = answer.toLowerCase().contains(currentBook.getAuthor().toLowerCase());
+        boolean scored = answer.toLowerCase().contains(currentBook.getAuthorFirstName().toLowerCase()) &&
+                answer.toLowerCase().contains(currentBook.getAuthorLastName().toLowerCase());
         Log.s(String.format("Client #%d answered question #%d %scorrectly.",
                 client.getId(), client.getCurrentQuestion(), scored ? "" : "in"));
 
-        output.writeUTF(scored ? "Correct!" : "Incorrect - correct answer is " +
-                currentBook.getAuthor().toUpperCase());
+        output.writeUTF(scored ? "Correct!" : "Incorrect - correct answer is " + currentBook.getAuthorFullNameCaps());
         output.flush();
 
         client.incCurrentQuestion(scored);
