@@ -13,42 +13,47 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class Server {
+public class Server implements AutoCloseable {
     public static final String PREFIX_QUESTION = "QUESTION:";
     public static final String PREFIX_END_OF_QUIZ = "CLIENTENDQUIZ";
     private static final String PREFIX_CLIENT_WANTS_TO_END_QUIZ = "-q";
-
+    ServerSocket socket;
     private List<ClientModel> clients = new ArrayList<>();
     private ArrayList<Book> quizBooks;
 
+    /**
+     * The constructor for the class.
+     */
     public Server() {
         Log.s("Fetching books from database, using Config.java's settings..");
         quizBooks = Db.fetchAndParseBooks();
 
-        ServerSocket socket = getSocketBoundToAvailablePort();
+        socket = getSocketBoundToAvailablePort();
         if (socket == null) {
             Log.e("Socket initialization failed, cannot continue.");
-            return;
         }
+    }
 
-        ExecutorService threadPool = Executors.newCachedThreadPool();
+    public static void main(String[] args) {
+        // Log.debugLevel = Log.LOG_VERBOSE;
+        try (Server server = new Server()) {
+            server.start();
+        }
+    }
+
+    private void start() {
+        ExecutorService clientThreads = Executors.newCachedThreadPool();
         Log.s("Awaiting client connections..");
-
         while (true) {
             try {
                 clients.add(new ClientModel(clients.size() + 1, socket.accept()));
-                threadPool.execute(newClientThread());
+                clientThreads.execute(newClientThread());
             } catch (IOException e) {
                 Log.e("An error occurred whilst waiting for connections:\n" + e.getMessage());
             }
 
             Log.s("Accepted client #" + clients.size());
         }
-    }
-
-    public static void main(String[] args) {
-        // Log.debugLevel = Log.LOG_VERBOSE;
-        new Server();
     }
 
     private Runnable newClientThread() {
@@ -67,7 +72,7 @@ public class Server {
                         Log.s(String.format("Got message from client #%d: %s", client.getId(), data));
 
                         if (client.getCurrentQuestionNumber() == -1) {
-                            if (data.toLowerCase().contains("y")){
+                            if (data.toLowerCase().contains("y")) {
                                 client.setCurrentQuestion(0);
                                 Log.s("Client #" + client.getId() + " opted to start quiz.");
                                 messageClient(output, "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
@@ -133,6 +138,17 @@ public class Server {
                     return null;
                 }
             }
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            Log.e("Couldn't close socket: " + e.getMessage());
         }
     }
 }
