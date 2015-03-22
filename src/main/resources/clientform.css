@@ -1,8 +1,0 @@
-Label, #header {
-    -fx-text-fill: white;
-    -fx-stroke: white;
-}
-
-#mainbody {
-    -fx-background-image: url("clientformbackground.jpg");
-}

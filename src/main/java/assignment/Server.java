@@ -88,12 +88,11 @@ public class Server {
                         final String data = input.readUTF();
                         Log.s(String.format("Got message from client #%d: %s", client.getId(), data));
 
-                        if (client.getCurrentQuestion() == -1) {
-                            if (data.toLowerCase().contains("y")) { // TODO: externalize to GUI (controller)
-                                client.setCurrentQuestion(0);
-                                Log.s("Client #" + client.getId() + " opted to start quiz.");
-                                output.writeUTF("Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
-                            }
+                        if (client.getCurrentQuestion() == -1 && data.toLowerCase().contains("y")) {
+                            client.setCurrentQuestion(0);
+                            Log.s("Client #" + client.getId() + " opted to start quiz.");
+                            output.writeUTF("Enter your answers in the following format: last name, firstname.n\n" +
+                                    "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
                         } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
                             checkClientAnswerAndProvideFeedback(client, output, currentBook, data);
                         } else {
