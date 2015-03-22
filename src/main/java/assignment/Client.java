@@ -1,11 +1,5 @@
 package assignment;
 
-import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,7 +7,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class Client extends Application {
+public class Client {
     private Socket socket;
     private DataOutputStream output;
     private DataInputStream input;
@@ -24,7 +18,25 @@ public class Client extends Application {
 
         output = new DataOutputStream(socket.getOutputStream());
         input = new DataInputStream(socket.getInputStream());
+    }
 
+    public static void main(String[] args) {
+        Log.debugLevel = Log.LOG_VERBOSE;
+
+        Client client = null;
+        try {
+            client = new Client();
+            client.startClient();
+        } catch (IOException e) {
+            Log.e("Error when connecting to server: " + e.getMessage());
+        } finally {
+            if (client != null) {
+                client.destroy();
+            }
+        }
+    }
+
+    private void startClient() {
         try (Scanner scanner = new Scanner(System.in)) {
             while (true) {
                 try {
@@ -33,22 +45,6 @@ public class Client extends Application {
                 } catch (IOException e) {
                     Log.e("Could not send message: " + e.getMessage());
                 }
-            }
-        }
-    }
-
-    public static void main(String[] args) {
-        //launch(args);
-        Log.debugLevel = Log.LOG_VERBOSE;
-
-        Client client = null;
-        try {
-            client = new Client();
-        } catch (IOException e) {
-            Log.e("Error when connecting to server: " + e.getMessage());
-        } finally {
-            if (client != null) {
-                client.destroy();
             }
         }
     }
@@ -64,11 +60,11 @@ public class Client extends Application {
         }
 
         if (message.startsWith(Server.PREFIX_QUESTION)) {
-            askClientAndSendResponse(scanner, message);
+            askUserAndSubmitResponse(scanner, message);
         }
     }
 
-    private void askClientAndSendResponse(Scanner scanner, String message) throws IOException {
+    private void askUserAndSubmitResponse(Scanner scanner, String message) throws IOException {
         System.out.println(message.substring(Server.PREFIX_QUESTION.length()));
         if (scanner.hasNextLine()) {
             String answer = scanner.nextLine();
@@ -77,14 +73,6 @@ public class Client extends Application {
         } else {
             Log.e("Could not access scanner!");
         }
-    }
-
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
-        primaryStage.setTitle("Hello World");
-        primaryStage.setScene(new Scene(root, 300, 275));
-        primaryStage.show();
     }
 
     private void sendMessageToServer(String message) throws IOException {

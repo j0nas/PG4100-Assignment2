@@ -78,6 +78,7 @@ public class Server {
                 while (true) {
                     try {
                         Book currentBook = quizBooks.get((int) (Math.random() * quizBooks.size()));
+
                         String message = PREFIX_QUESTION + (client.getCurrentQuestion() == -1 ?
                                 "Want to start a quiz? (y/n): " : "Who wrote " + currentBook.getTitle() + "?");
                         output.writeUTF(message);
@@ -86,6 +87,7 @@ public class Server {
 
                         final String data = input.readUTF();
                         Log.s(String.format("Got message from client #%d: %s", client.getId(), data));
+
                         if (client.getCurrentQuestion() == -1) {
                             if (data.toLowerCase().contains("y")) { // TODO: externalize to GUI (controller)
                                 client.setCurrentQuestion(0);
@@ -93,23 +95,9 @@ public class Server {
                                 output.writeUTF("Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
                             }
                         } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
-                            boolean scored = data.toLowerCase().contains(currentBook.getAuthor().toLowerCase());
-                            Log.s(String.format("Client #%d answered question #%d %scorrectly.",
-                                    client.getId(), client.getCurrentQuestion(), scored ? "" : "in"));
-
-                            output.writeUTF(scored ? "Correct!" : "Incorrect - correct answer is " +
-                                    currentBook.getAuthor().toUpperCase());
-                            output.flush();
-
-                            client.incCurrentQuestion(scored);
+                            checkClientAnswerAndProvideFeedback(client, output, currentBook, data);
                         } else {
-                            Log.v(String.format("Client #%d finished quiz with score %d.",
-                                    client.getId(), client.getScore()));
-
-                            output.writeUTF(String.format("Quiz completed. Your final score is %d/%d.\n" +
-                                    "Thank you for participating.", client.getScore(), client.getCurrentQuestion()));
-                            output.writeUTF(PREFIX_END_OF_QUIZ);
-                            output.flush();
+                            clientFinishedQuiz(client, output);
                         }
 
                     } catch (Exception e) {
@@ -117,9 +105,31 @@ public class Server {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e("An error occurred whilst accesing I/O streams: " + e.getMessage());
             }
         };
+    }
+
+    private void checkClientAnswerAndProvideFeedback(ClientModel client, DataOutputStream output, Book currentBook, String answer) throws IOException {
+        boolean scored = answer.toLowerCase().contains(currentBook.getAuthor().toLowerCase());
+        Log.s(String.format("Client #%d answered question #%d %scorrectly.",
+                client.getId(), client.getCurrentQuestion(), scored ? "" : "in"));
+
+        output.writeUTF(scored ? "Correct!" : "Incorrect - correct answer is " +
+                currentBook.getAuthor().toUpperCase());
+        output.flush();
+
+        client.incCurrentQuestion(scored);
+    }
+
+    private void clientFinishedQuiz(ClientModel client, DataOutputStream output) throws IOException {
+        Log.v(String.format("Client #%d finished quiz with score %d.",
+                client.getId(), client.getScore()));
+
+        output.writeUTF(String.format("Quiz completed. Your final score is %d/%d.\n" +
+                "Thank you for participating.", client.getScore(), client.getCurrentQuestion()));
+        output.writeUTF(PREFIX_END_OF_QUIZ);
+        output.flush();
     }
 
     private void bindSocketToPort(int port) {
