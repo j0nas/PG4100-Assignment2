@@ -9,12 +9,18 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class Client {
+public class Client implements AutoCloseable {
     private Socket socket;
     private DataOutputStream output;
     private DataInputStream input;
     private boolean isAlive = true;
 
+    /**
+     * Initializes an instance of the class.
+     * @param serverAddress The server address to which the instance will attempt to connect to..
+     * @param port .. and the respective port.
+     * @throws IOException
+     */
     public Client(InetAddress serverAddress, int port) throws IOException {
         socket = new Socket(serverAddress, port);
         Log.s("Connected to server at " + socket.getLocalAddress());
@@ -23,7 +29,10 @@ public class Client {
         input = new DataInputStream(socket.getInputStream());
     }
 
-    private void executeLifecycle() {
+    /**
+     * Lifecycle method.
+     */
+    private void start() {
         try (Scanner scanner = new Scanner(System.in)) {
             while (isAlive) {
                 handleIncomingServerMessages(scanner);
@@ -31,20 +40,22 @@ public class Client {
         }
     }
 
+    /**
+     * Main method, controlling the flow of execution for the class.
+     * @param args not used.
+     */
     public static void main(String[] args) {
-        Client client = null;
-        try {
-            client = new Client(InetAddress.getLocalHost(), Config.SERVER_PORT);
-            client.executeLifecycle();
+        try (Client client = new Client(InetAddress.getLocalHost(), Config.SERVER_PORT)) {
+            client.start();
         } catch (IOException e) {
             Log.e("Error when connecting to server: " + e.getMessage());
-        } finally {
-            if (client != null) {
-                client.destroy();
-            }
         }
     }
 
+    /**
+     * Receives and handles messages from the server, filtering on predefined prefixes.
+     * @param scanner Scanner to utilize for responses to the server if needed.
+     */
     private void handleIncomingServerMessages(Scanner scanner) {
         String message;
 
@@ -68,6 +79,11 @@ public class Client {
         Log.s(message);
     }
 
+    /**
+     * Query for the user to respond to a message from the server.
+     * @param scanner The scanner used to receive a response to the server.
+     * @param message The message from the server
+     */
     private void askUserAndSubmitResponse(Scanner scanner, String message) {
         System.out.println(message.substring(Server.PREFIX_QUESTION.length()));
         if (scanner.hasNextLine()) {
@@ -79,6 +95,10 @@ public class Client {
         }
     }
 
+    /**
+     * Convenience method for sending a string message to the server.
+     * @param message The string to be sent.
+     */
     private void sendMessageToServer(String message) {
         try {
             output.writeUTF(message);
@@ -88,6 +108,9 @@ public class Client {
         }
     }
 
+    /**
+     * Private shutdown method to be called when server requests shutdown.
+     */
     private void destroy() {
         isAlive = false;
         try {
@@ -97,5 +120,10 @@ public class Client {
         } catch (IOException e) {
             Log.e("Could not execute destroy(): " + e.getMessage());
         }
+    }
+
+    @Override
+    public void close() {
+        destroy();
     }
 }
