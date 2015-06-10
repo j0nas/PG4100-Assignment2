@@ -192,6 +192,10 @@ public class Server implements AutoCloseable {
     @Override
     public void close() {
         try {
+            for (ClientModel client : clients) {
+                client.getSocket().close();
+            }
+
             if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
