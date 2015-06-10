@@ -17,8 +17,9 @@ public class Client implements AutoCloseable {
 
     /**
      * Initializes an instance of the class.
+     *
      * @param serverAddress The server address to which the instance will attempt to connect to..
-     * @param port .. and the respective port.
+     * @param port          .. and the respective port.
      * @throws IOException
      */
     public Client(InetAddress serverAddress, int port) throws IOException {
@@ -31,13 +32,16 @@ public class Client implements AutoCloseable {
 
     /**
      * Main method, controlling the flow of execution for the class.
+     *
      * @param args not used.
      */
     public static void main(String[] args) {
         try (Client client = new Client(InetAddress.getLocalHost(), Config.SERVER_PORT)) {
             client.start();
         } catch (IOException e) {
-            Log.e("Error when connecting to server: " + e.getMessage());
+            final String error = "Error when connecting to server: " + e.getMessage();
+            System.out.println(error);
+            Log.e(error);
         }
     }
 
@@ -54,6 +58,7 @@ public class Client implements AutoCloseable {
 
     /**
      * Receives and handles messages from the server, filtering on predefined prefixes.
+     *
      * @param scanner Scanner to utilize for responses to the server if needed.
      */
     private void handleIncomingServerMessages(Scanner scanner) {
@@ -81,6 +86,7 @@ public class Client implements AutoCloseable {
 
     /**
      * Query for the user to respond to a message from the server.
+     *
      * @param scanner The scanner used to receive a response to the server.
      * @param message The message from the server
      */
@@ -97,6 +103,7 @@ public class Client implements AutoCloseable {
 
     /**
      * Convenience method for sending a string message to the server.
+     *
      * @param message The string to be sent.
      */
     private void sendMessageToServer(String message) {
