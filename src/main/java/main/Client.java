@@ -30,17 +30,6 @@ public class Client implements AutoCloseable {
     }
 
     /**
-     * Lifecycle method.
-     */
-    private void start() {
-        try (Scanner scanner = new Scanner(System.in)) {
-            while (isAlive) {
-                handleIncomingServerMessages(scanner);
-            }
-        }
-    }
-
-    /**
      * Main method, controlling the flow of execution for the class.
      * @param args not used.
      */
@@ -49,6 +38,17 @@ public class Client implements AutoCloseable {
             client.start();
         } catch (IOException e) {
             Log.e("Error when connecting to server: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Lifecycle method.
+     */
+    private void start() {
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (isAlive) {
+                handleIncomingServerMessages(scanner);
+            }
         }
     }
 
@@ -67,7 +67,7 @@ public class Client implements AutoCloseable {
         }
 
         if (message.startsWith(Server.PREFIX_END_OF_QUIZ)) {
-            destroy();
+            close();
             return;
         }
 
@@ -109,9 +109,10 @@ public class Client implements AutoCloseable {
     }
 
     /**
-     * Private shutdown method to be called when server requests shutdown.
+     * Shutdown method to be called when server requests shutdown or when object instance no longer is in use.
      */
-    private void destroy() {
+    @Override
+    public void close() {
         isAlive = false;
         try {
             socket.close();
@@ -120,10 +121,5 @@ public class Client implements AutoCloseable {
         } catch (IOException e) {
             Log.e("Could not execute destroy(): " + e.getMessage());
         }
-    }
-
-    @Override
-    public void close() {
-        destroy();
     }
 }
