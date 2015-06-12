@@ -1,6 +1,6 @@
 package main;
 
-import util.Log;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -24,7 +24,7 @@ public class Client implements AutoCloseable {
      */
     public Client(InetAddress serverAddress, int port) throws IOException {
         socket = new Socket(serverAddress, port);
-        Log.s("Connected to server at " + socket.getLocalAddress());
+        LogManager.getLogger(Config.LOG_CLIENT).debug("Connected to server at " + socket.getLocalAddress());
 
         output = new DataOutputStream(socket.getOutputStream());
         input = new DataInputStream(socket.getInputStream());
@@ -40,8 +40,7 @@ public class Client implements AutoCloseable {
             client.start();
         } catch (IOException e) {
             final String error = "Error when connecting to server: " + e.getMessage();
-            System.out.println(error);
-            Log.e(error);
+            LogManager.getLogger(Config.LOG_CLIENT).error(error);
         }
     }
 
@@ -67,7 +66,7 @@ public class Client implements AutoCloseable {
         try {
             message = input.readUTF();
         } catch (IOException e) {
-            Log.e("Could not receive incoming data: " + e.getMessage());
+            LogManager.getLogger(Config.LOG_CLIENT).error("Could not receive incoming data: " + e.getMessage());
             return;
         }
 
@@ -81,7 +80,7 @@ public class Client implements AutoCloseable {
             return;
         }
 
-        Log.s(message);
+        LogManager.getLogger(Config.LOG_CLIENT).debug(message);
     }
 
     /**
@@ -91,13 +90,13 @@ public class Client implements AutoCloseable {
      * @param message The message from the server
      */
     private void askUserAndSubmitResponse(Scanner scanner, String message) {
-        System.out.println(message.substring(Server.PREFIX_QUESTION.length()));
+        LogManager.getLogger(Config.LOG_CLIENT).debug(message.substring(Server.PREFIX_QUESTION.length()));
         if (scanner.hasNextLine()) {
             String answer = scanner.nextLine();
             sendMessageToServer(answer);
-            Log.v("Sending message to server: " + answer);
+            LogManager.getLogger(Config.LOG_CLIENT).debug("Sending message to server: " + answer);
         } else {
-            Log.e("Could not access scanner!");
+            LogManager.getLogger(Config.LOG_CLIENT).error("Could not access scanner!");
         }
     }
 
@@ -111,7 +110,7 @@ public class Client implements AutoCloseable {
             output.writeUTF(message);
             output.flush();
         } catch (IOException e) {
-            Log.e("Could not send message to server: " + e.getMessage());
+            LogManager.getLogger(Config.LOG_CLIENT).error("Could not send message to server: " + e.getMessage());
         }
     }
 
@@ -126,7 +125,7 @@ public class Client implements AutoCloseable {
             input.close();
             output.close();
         } catch (IOException e) {
-            Log.e("Could not execute destroy(): " + e.getMessage());
+            LogManager.getLogger(Config.LOG_CLIENT).error("Could not close(): " + e.getMessage());
         }
     }
 }

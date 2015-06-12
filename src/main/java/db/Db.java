@@ -2,7 +2,7 @@ package db;
 
 import main.Book;
 import main.Config;
-import util.Log;
+import org.apache.logging.log4j.LogManager;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class Db {
                 ));
             }
         } catch (Exception e) {
-            Log.e("Error upon connecting to database: " + e.getMessage());
+            LogManager.getLogger(Config.LOG_SERVER).error("Error upon connecting to database: " + e.getMessage());
         }
 
         return listToFill;

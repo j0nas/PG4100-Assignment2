@@ -1,7 +1,7 @@
 package main;
 
 import db.Db;
-import util.Log;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -26,11 +26,11 @@ public class Server implements AutoCloseable {
      * The initializing constructor for the class.
      */
     public Server() {
-        Log.s("Fetching books from database, using Config.java's settings..");
+        LogManager.getLogger(Config.LOG_SERVER).debug("Fetching books from database, using Config.java's settings..");
         quizBooks = Db.fetchAndParseBooks();
 
         if ((socket = getSocketBoundToAvailablePort()) == null) {
-            Log.e("Socket initialization failed, cannot continue.");
+            LogManager.getLogger(Config.LOG_SERVER).error("Socket initialization failed, cannot continue.");
         }
     }
 
@@ -51,7 +51,7 @@ public class Server implements AutoCloseable {
      */
     private void start() {
         ExecutorService clientThreads = Executors.newCachedThreadPool();
-        Log.s("Awaiting client connections..");
+        LogManager.getLogger(Config.LOG_SERVER).debug("Awaiting client connections..");
 
         while (true) {
             try {
@@ -59,10 +59,10 @@ public class Server implements AutoCloseable {
                 clients.add(client);
                 clientThreads.execute(newClientThread(client));
             } catch (IOException e) {
-                Log.e("An error occurred whilst waiting for connections:\n" + e.getMessage());
+                LogManager.getLogger(Config.LOG_SERVER).error("An error occurred whilst waiting for connections:\n" + e.getMessage());
             }
 
-            Log.s("Accepted client #" + clients.size());
+            LogManager.getLogger(Config.LOG_SERVER).debug("Accepted client #" + clients.size());
         }
     }
 
@@ -85,12 +85,12 @@ public class Server implements AutoCloseable {
                                 "Want to start a quiz? (y/n): " : "Who wrote " + currentBook.getTitle() + "?"));
 
                         final String data = input.readUTF();
-                        Log.s(String.format("Got message from client #%d: %s", client.getId(), data));
+                        LogManager.getLogger(Config.LOG_SERVER).debug(String.format("Got message from client #%d: %s", client.getId(), data));
 
                         if (client.getCurrentQuestionNumber() == -1) {
                             if (data.toLowerCase().contains("y")) {
                                 client.setCurrentQuestion(0);
-                                Log.s("Client #" + client.getId() + " opted to start quiz.");
+                                LogManager.getLogger(Config.LOG_SERVER).debug("Client #" + client.getId() + " opted to start quiz.");
                                 messageClient(output, "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
                             } else {
                                 messageClient(output, "Some other time, then. Good bye!");
@@ -103,11 +103,11 @@ public class Server implements AutoCloseable {
                         }
 
                     } catch (Exception e) {
-                        Log.e("An error occurred: " + e.getMessage());
+                        LogManager.getLogger(Config.LOG_SERVER).error("An error occurred: " + e.getMessage());
                     }
                 }
             } catch (IOException e) {
-                Log.e("An error occurred whilst accessing I/O streams: " + e.getMessage());
+                LogManager.getLogger(Config.LOG_SERVER).error("An error occurred whilst accessing I/O streams: " + e.getMessage());
             }
         };
     }
@@ -123,7 +123,7 @@ public class Server implements AutoCloseable {
             output.writeUTF(message);
             output.flush();
         } catch (IOException e) {
-            Log.e("Error on sending message: " + e.getMessage());
+            LogManager.getLogger(Config.LOG_SERVER).error("Error on sending message: " + e.getMessage());
         }
     }
 
@@ -139,7 +139,7 @@ public class Server implements AutoCloseable {
         boolean scored = answer.toLowerCase().contains(currentBook.getAuthorFirstName().toLowerCase()) &&
                 answer.toLowerCase().contains(currentBook.getAuthorLastName().toLowerCase());
 
-        Log.s(String.format("Client #%d answered question #%d %scorrectly.",
+        LogManager.getLogger(Config.LOG_SERVER).debug(String.format("Client #%d answered question #%d %scorrectly.",
                 client.getId(), client.getCurrentQuestionNumber(), scored ? "" : "in"));
         messageClient(output, scored ? "Correct!" :
                 "Incorrect - correct answer is " + currentBook.getAuthorFullNameCaps());
@@ -153,7 +153,7 @@ public class Server implements AutoCloseable {
      * @param output The communication channel though which to message the shutdown.
      */
     private void clientFinishedQuiz(ClientModel client, DataOutputStream output) {
-        Log.v(String.format("Client #%d finished quiz with score %d.",
+        LogManager.getLogger(Config.LOG_SERVER).debug(String.format("Client #%d finished quiz with score %d.",
                 client.getId(), client.getScore()));
 
         messageClient(output, String.format("Quiz completed. Your final score is %d/%d.\n" +
@@ -169,17 +169,17 @@ public class Server implements AutoCloseable {
     private ServerSocket getSocketBoundToAvailablePort() {
         ServerSocket serverSocket;
         while (true) {
-            Log.s("Attempting to bind to port " + Config.SERVER_PORT + ".. ");
+            LogManager.getLogger(Config.LOG_SERVER).debug("Attempting to bind to port " + Config.SERVER_PORT + ".. ");
             try {
                 serverSocket = new ServerSocket(Config.SERVER_PORT);
-                Log.s("Success.");
+                LogManager.getLogger(Config.LOG_SERVER).debug("Success.");
                 return serverSocket;
             } catch (IOException e) {
                 if (e instanceof BindException) {
-                    Log.s("Port is taken.");
+                    LogManager.getLogger(Config.LOG_SERVER).debug("Port is taken.");
                     Config.SERVER_PORT++;
                 } else {
-                    Log.e("Encountered unknown error: " + e.getMessage());
+                    LogManager.getLogger(Config.LOG_SERVER).error("Encountered unknown error: " + e.getMessage());
                     return null;
                 }
             }
@@ -200,7 +200,7 @@ public class Server implements AutoCloseable {
                 socket.close();
             }
         } catch (IOException e) {
-            Log.e("Couldn't close socket: " + e.getMessage());
+            LogManager.getLogger(Config.LOG_SERVER).error("Couldn't close socket: " + e.getMessage());
         }
     }
 }
