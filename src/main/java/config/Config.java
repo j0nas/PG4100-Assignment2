@@ -1,4 +1,4 @@
-package main;
+package config;
 
 public class Config {
     public static final String DB_USER = "root";

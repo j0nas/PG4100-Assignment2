@@ -1,5 +1,6 @@
-package main;
+package models;
 
+import config.Config;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.DataInputStream;
@@ -31,23 +32,9 @@ public class Client implements AutoCloseable {
     }
 
     /**
-     * Main method, controlling the flow of execution for the class.
-     *
-     * @param args not used.
-     */
-    public static void main(String[] args) {
-        try (Client client = new Client(InetAddress.getLocalHost(), Config.SERVER_PORT)) {
-            client.start();
-        } catch (IOException e) {
-            final String error = "Error when connecting to server: " + e.getMessage();
-            LogManager.getLogger(Config.LOG_CLIENT).error(error);
-        }
-    }
-
-    /**
      * Lifecycle method.
      */
-    private void start() {
+    public void start() {
         try (Scanner scanner = new Scanner(System.in)) {
             while (isAlive) {
                 handleIncomingServerMessages(scanner);

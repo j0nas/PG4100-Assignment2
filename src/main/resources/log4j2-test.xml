@@ -9,13 +9,7 @@
         <Root level="ERROR">
             <AppenderRef ref="Console"/>
         </Root>
-
-
-        <Logger name="no.wact.jenjon13.Client" level="trace">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="no.wact.jenjon13.Server" level="trace">
-            <AppenderRef ref="Console"/>
-        </Logger>
+        <Logger name="no.wact.jenjon13.ClientLog" level="trace"/>
+        <Logger name="no.wact.jenjon13.ServerLog" level="trace"/>
     </Loggers>
 </Configuration>

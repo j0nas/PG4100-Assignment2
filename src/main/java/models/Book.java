@@ -1,4 +1,4 @@
-package main;
+package models;
 
 public class Book {
     private final int id;

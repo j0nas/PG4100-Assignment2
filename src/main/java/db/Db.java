@@ -1,7 +1,7 @@
 package db;
 
-import main.Book;
-import main.Config;
+import config.Config;
+import models.Book;
 import org.apache.logging.log4j.LogManager;
 
 import java.sql.ResultSet;

@@ -1,5 +1,6 @@
-package main;
+package models;
 
+import config.Config;
 import db.Db;
 import org.apache.logging.log4j.LogManager;
 
@@ -35,21 +36,9 @@ public class Server implements AutoCloseable {
     }
 
     /**
-     * The main method of the program, which controls its execution flow.
-     *
-     * @param args Not used.
-     */
-    public static void main(String[] args) {
-        // Log.debugLevel = Log.LOG_VERBOSE; // UNCOMMENT THIS TO GET VERBOSE DEBUGGING
-        try (Server server = new Server()) {
-            server.start();
-        }
-    }
-
-    /**
      * Lifecycle method for the class.
      */
-    private void start() {
+    public void start() {
         ExecutorService clientThreads = Executors.newCachedThreadPool();
         LogManager.getLogger(Config.LOG_SERVER).debug("Awaiting client connections..");
 
@@ -90,7 +79,8 @@ public class Server implements AutoCloseable {
                         if (client.getCurrentQuestionNumber() == -1) {
                             if (data.toLowerCase().contains("y")) {
                                 client.setCurrentQuestion(0);
-                                LogManager.getLogger(Config.LOG_SERVER).debug("Client #" + client.getId() + " opted to start quiz.");
+                                LogManager.getLogger(Config.LOG_SERVER)
+                                        .debug("Client #" + client.getId() + " opted to start quiz.");
                                 messageClient(output, "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
                             } else {
                                 messageClient(output, "Some other time, then. Good bye!");
@@ -101,7 +91,6 @@ public class Server implements AutoCloseable {
                         } else {
                             clientFinishedQuiz(client, output);
                         }
-
                     } catch (Exception e) {
                         LogManager.getLogger(Config.LOG_SERVER).error("An error occurred: " + e.getMessage());
                     }
