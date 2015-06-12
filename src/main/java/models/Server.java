@@ -54,7 +54,36 @@ public class Server implements AutoCloseable {
     }
 
     /**
+     * Initialize client if the user wants to.
+     *
+     * @param client The respective ClientModel to initialize
+     * @param in     The client's corresponding DataInputStream
+     * @param out    The client's corresponding DataOutputStream
+     * @return true if the user was initalizes, false if the user isn't willing
+     * @throws IOException
+     */
+    public boolean initClientIfWantsTo(ClientModel client, DataInputStream in, DataOutputStream out) throws IOException {
+        messageClient(out, PREFIX_QUESTION + "Want to start a quiz? (y/n): ");
+
+        final String response = in.readUTF();
+        LogManager.getLogger(Config.LOG_SERVER).debug(String.format("Got message from client #%d: %s", client.getId(), response));
+
+        final boolean wantsToStart = response.toLowerCase().contains("y");
+        if (wantsToStart) {
+            client.setCurrentQuestion(0);
+            LogManager.getLogger(Config.LOG_SERVER).debug("Client #" + client.getId() + " opted to start quiz.");
+            messageClient(out, "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
+        } else {
+            messageClient(out, "Some other time, then. Good bye!");
+            messageClient(out, PREFIX_END_OF_QUIZ);
+        }
+
+        return wantsToStart;
+    }
+
+    /**
      * Creates Runnable instances that interact with the connected clients.
+     * Represents the main program flow of the clients.
      *
      * @param client The respective client for which the instance is to be associated with.
      * @return A Runnable instance associated with a ClientModel instance, which
@@ -62,41 +91,28 @@ public class Server implements AutoCloseable {
      */
     private Runnable newClientThread(ClientModel client) {
         return () -> {
-            try (DataInputStream input = new DataInputStream(client.getSocket().getInputStream());
-                 DataOutputStream output = new DataOutputStream(client.getSocket().getOutputStream())
+            try (DataInputStream in = new DataInputStream(client.getSocket().getInputStream());
+                 DataOutputStream out = new DataOutputStream(client.getSocket().getOutputStream())
             ) {
+                if (!initClientIfWantsTo(client, in, out)) {
+                    return;
+                }
+
                 while (true) {
-                    try {
-                        messageClient(output, PREFIX_QUESTION + (client.getCurrentQuestionNumber() == -1 ?
-                                "Want to start a quiz? (y/n): " : "Who wrote " + DbBooks.getInstance().getRandomBook().getTitle() + "?"));
+                    messageClient(out, PREFIX_QUESTION + "Who wrote " + DbBooks.getInstance().getRandomBook().getTitle() + "?");
 
-                        final String data = input.readUTF();
-                        LogManager.getLogger(Config.LOG_SERVER).debug(String.format("Got message from client #%d: %s", client.getId(), data));
+                    final String data = in.readUTF();
+                    LogManager.getLogger(Config.LOG_SERVER).debug(String.format("Got message from client #%d: %s", client.getId(), data));
 
-                        if (client.getCurrentQuestionNumber() == -1) {
-                            if (data.toLowerCase().contains("y")) {
-                                client.setCurrentQuestion(0);
-                                LogManager.getLogger(Config.LOG_SERVER)
-                                        .debug("Client #" + client.getId() + " opted to start quiz.");
-                                messageClient(output, "Type \"" + PREFIX_CLIENT_WANTS_TO_END_QUIZ + "\" at any time to end the quiz.");
-                            } else {
-                                messageClient(output, "Some other time, then. Good bye!");
-                                messageClient(output, PREFIX_END_OF_QUIZ);
-                                return;
-                            }
-                        } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
-                            checkClientAnswerAndProvideFeedback(client, output, DbBooks.getInstance().getLastBook(), data);
-                        } else {
-                            clientFinishedQuiz(client, output);
-                            return;
-                        }
-                    } catch (IOException e) {
-                        LogManager.getLogger(Config.LOG_SERVER).error("An error occurred: " + e.getMessage());
+                    if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
+                        checkClientAnswerAndProvideFeedback(client, out, DbBooks.getInstance().getLastBook(), data);
+                    } else {
+                        clientFinishedQuiz(client, out);
                         return;
                     }
                 }
             } catch (IOException e) {
-                LogManager.getLogger(Config.LOG_SERVER).error("An error occurred whilst accessing I/O streams: " + e.getMessage());
+                LogManager.getLogger(Config.LOG_SERVER).error("An error occurred: " + e.getMessage());
                 return;
             }
         };
