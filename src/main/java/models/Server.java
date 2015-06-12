@@ -85,11 +85,13 @@ public class Server implements AutoCloseable {
                             } else {
                                 messageClient(output, "Some other time, then. Good bye!");
                                 messageClient(output, PREFIX_END_OF_QUIZ);
+                                return;
                             }
                         } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
                             checkClientAnswerAndProvideFeedback(client, output, currentBook, data);
                         } else {
                             clientFinishedQuiz(client, output);
+                            return;
                         }
                     } catch (Exception e) {
                         LogManager.getLogger(Config.LOG_SERVER).error("An error occurred: " + e.getMessage());
