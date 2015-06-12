@@ -8,7 +8,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 
 public class Db {
-    public static ArrayList<Book> fetchAndParseBooks() {
+    protected static ArrayList<Book> fetchAndParseBooks() {
         ArrayList<Book> listToFill = new ArrayList<>();
         try (ConnectToDB dbConnection = new ConnectToDB(Config.DB_HOST, Config.DB_NAME, Config.DB_USER, Config.DB_PASS)) {
             ResultSet result = dbConnection

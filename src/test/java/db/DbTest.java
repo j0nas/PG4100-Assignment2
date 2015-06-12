@@ -1,6 +1,6 @@
+package db;
+
 import config.Config;
-import db.ConnectToDB;
-import db.Db;
 import models.Book;
 import org.junit.After;
 import org.junit.Before;

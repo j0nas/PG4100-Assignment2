@@ -1,7 +1,7 @@
 package models;
 
 import config.Config;
-import db.Db;
+import db.DbBooks;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.DataInputStream;
@@ -21,14 +21,12 @@ public class Server implements AutoCloseable {
     private static final String PREFIX_CLIENT_WANTS_TO_END_QUIZ = "-q";
     private final ServerSocket socket;
     private final List<ClientModel> clients = new ArrayList<>();
-    private final ArrayList<Book> quizBooks;
 
     /**
      * The initializing constructor for the class.
      */
     public Server() {
         LogManager.getLogger(Config.LOG_SERVER).debug("Fetching books from database, using Config.java's settings..");
-        quizBooks = Db.fetchAndParseBooks();
 
         if ((socket = getSocketBoundToAvailablePort()) == null) {
             LogManager.getLogger(Config.LOG_SERVER).error("Socket initialization failed, cannot continue.");
@@ -69,9 +67,8 @@ public class Server implements AutoCloseable {
             ) {
                 while (true) {
                     try {
-                        Book currentBook = quizBooks.get((int) (Math.random() * quizBooks.size()));
                         messageClient(output, PREFIX_QUESTION + (client.getCurrentQuestionNumber() == -1 ?
-                                "Want to start a quiz? (y/n): " : "Who wrote " + currentBook.getTitle() + "?"));
+                                "Want to start a quiz? (y/n): " : "Who wrote " + DbBooks.getInstance().getRandomBook().getTitle() + "?"));
 
                         final String data = input.readUTF();
                         LogManager.getLogger(Config.LOG_SERVER).debug(String.format("Got message from client #%d: %s", client.getId(), data));
@@ -88,17 +85,19 @@ public class Server implements AutoCloseable {
                                 return;
                             }
                         } else if (!data.startsWith(PREFIX_CLIENT_WANTS_TO_END_QUIZ)) {
-                            checkClientAnswerAndProvideFeedback(client, output, currentBook, data);
+                            checkClientAnswerAndProvideFeedback(client, output, DbBooks.getInstance().getLastBook(), data);
                         } else {
                             clientFinishedQuiz(client, output);
                             return;
                         }
-                    } catch (Exception e) {
+                    } catch (IOException e) {
                         LogManager.getLogger(Config.LOG_SERVER).error("An error occurred: " + e.getMessage());
+                        return;
                     }
                 }
             } catch (IOException e) {
                 LogManager.getLogger(Config.LOG_SERVER).error("An error occurred whilst accessing I/O streams: " + e.getMessage());
+                return;
             }
         };
     }
